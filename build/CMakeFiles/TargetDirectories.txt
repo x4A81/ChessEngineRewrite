@@ -1,7 +1,0 @@
-/home/jkingsbury/ChessEngineRewrite/build/CMakeFiles/ChessEngineRewrite.dir
-/home/jkingsbury/ChessEngineRewrite/build/CMakeFiles/edit_cache.dir
-/home/jkingsbury/ChessEngineRewrite/build/CMakeFiles/rebuild_cache.dir
-/home/jkingsbury/ChessEngineRewrite/build/CMakeFiles/list_install_components.dir
-/home/jkingsbury/ChessEngineRewrite/build/CMakeFiles/install.dir
-/home/jkingsbury/ChessEngineRewrite/build/CMakeFiles/install/local.dir
-/home/jkingsbury/ChessEngineRewrite/build/CMakeFiles/install/strip.dir

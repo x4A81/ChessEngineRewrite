@@ -1,1 +1,0 @@
-/usr/bin/c++ -g -Wl,--dependency-file=CMakeFiles/ChessEngineRewrite.dir/link.d CMakeFiles/ChessEngineRewrite.dir/src/Board.cpp.o CMakeFiles/ChessEngineRewrite.dir/src/Movegen.cpp.o CMakeFiles/ChessEngineRewrite.dir/src/main.cpp.o -o ChessEngineRewrite
