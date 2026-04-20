@@ -5,16 +5,16 @@
 #include <bit>
 #include <cassert>
 
-constexpr inline bool validSq(Square sq) {
-    return sq >= 0 && sq < 64;
+[[nodiscard]] constexpr inline bool validSq(Square sq) {
+    return sq < 64;
 }
 
-constexpr inline BitBoard mask(Square square) {
+[[nodiscard]] constexpr inline BitBoard mask(Square square) {
     assert(validSq(square));
     return 1ULL << square;
 }
 
-constexpr inline BitBoard flipRank(Square square) {
+[[nodiscard]] constexpr inline BitBoard flipRank(Square square) {
     assert(validSq(square));
     return square ^ 56;
 }
@@ -29,16 +29,20 @@ constexpr inline void setBit(BitBoard& bb, Square square) {
     bb |= mask(square);
 }
 
-constexpr inline int popLSB(BitBoard& bb) {
+[[nodiscard]] constexpr inline int popLSB(BitBoard& bb) {
     assert(bb != 0);
     int sq = std::countr_zero(bb);
     bb &= bb - 1;
     return sq;
 }
 
-constexpr inline int bitscanForward(BitBoard bb) {
+[[nodiscard]] constexpr inline int bitscanForward(BitBoard bb) {
     assert(bb != 0);
     return std::countr_zero(bb);
+}
+
+[[nodiscard]] constexpr inline int popCount(BitBoard bb) {
+    return std::popcount(bb);
 }
 
 // Designed to be indexed by Direction enum
@@ -51,10 +55,21 @@ constexpr inline std::array<int, 8> shift_val = {
 };
 
 template <Direction dir>
-constexpr inline BitBoard shift(BitBoard bb) {
+[[nodiscard]] constexpr inline BitBoard shift(BitBoard bb) {
     int shift = shift_val[static_cast<int>(dir)];
     if (shift > 0)
         return (bb << shift) & noWraps[static_cast<int>(dir)];
     else
         return (bb >> -shift) & noWraps[static_cast<int>(dir)];
+}
+
+template <Direction dir>
+[[nodiscard]] constexpr inline BitBoard ray(Square sq) {
+    assert(validSq(sq));
+    BitBoard bb = mask(sq);
+    BitBoard result = 0ULL;
+    while ((bb = shift<dir>(bb))) {
+        result |= bb;
+    }
+    return result;
 }

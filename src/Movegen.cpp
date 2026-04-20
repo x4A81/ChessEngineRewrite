@@ -146,7 +146,7 @@ void generateAllPieces(const Board& board, MoveList& move_list) {
 }
 
 template <GenType type>
-void Board::generateMoves(MoveList& move_list) {
+void Board::generateMoves(MoveList& move_list) const {
     assert(type != GenType::LEGAL); // not supported
 
     Colour us = sideToMove;
@@ -157,12 +157,13 @@ void Board::generateMoves(MoveList& move_list) {
     }
 }
 
-template void Board::generateMoves<GenType::ALL>(MoveList& move_list);
-template void Board::generateMoves<GenType::CAPTURES>(MoveList& move_list);
-template void Board::generateMoves<GenType::QUIET>(MoveList& move_list);
-template void Board::generateMoves<GenType::EVASIONS>(MoveList& move_list);
+template void Board::generateMoves<GenType::ALL>(MoveList& move_list) const;
+template void Board::generateMoves<GenType::CAPTURES>(MoveList& move_list) const;
+template void Board::generateMoves<GenType::QUIET>(MoveList& move_list) const;
+template void Board::generateMoves<GenType::EVASIONS>(MoveList& move_list) const;
 
 template <>
-void Board::generateMoves<GenType::LEGAL>(MoveList& move_list) {
+void Board::generateMoves<GenType::LEGAL>(MoveList& move_list) const {
     // Generate legal moves
+    // TODO implement this
 }

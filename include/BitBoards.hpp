@@ -14,14 +14,23 @@ constexpr inline BitBoard rank6BB = rank1BB << 40;
 constexpr inline BitBoard rank7BB = rank1BB << 48;
 constexpr inline BitBoard rank8BB = rank1BB << 56;
 
+constexpr inline BitBoard fileABB = 0x0101010101010101ULL;
+constexpr inline BitBoard fileBBB = fileABB << 1;
+constexpr inline BitBoard fileCBB = fileABB << 2;
+constexpr inline BitBoard fileDBB = fileABB << 3;
+constexpr inline BitBoard fileEBB = fileABB << 4;
+constexpr inline BitBoard fileFBB = fileABB << 5;
+constexpr inline BitBoard fileGBB = fileABB << 6;
+constexpr inline BitBoard fileHBB = fileABB << 7;
+
 inline void printBitBoard(BitBoard bb) {
     std::print("\n\n");
     for (int r = 7; r >= 0; --r) {
         std::print("  +---+---+---+---+---+---+---+---+\n");
         for (int f = 0; f < 8; ++f) {
             char piece = (bb & mask(8*r+f)) ? 'X' : ' ';
-            if (f == 0) { std::print("%d ", r+1); }
-            std::print("| %c ", piece);
+            if (f == 0) { std::printf("%d ", r+1); }
+            std::printf("| %c ", piece);
         }
         std::print("| \n");
     }
@@ -82,27 +91,67 @@ constexpr std::array<BitBoard, 64> generateKing_att_table() {
 
 alignas(64) constexpr inline std::array<BitBoard, 64> king_att_table = generateKing_att_table();
 
-constexpr std::array<int, 64> rook_shifts = {
-    12, 11, 11, 11, 11, 11, 11, 12,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11, 
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    12, 11, 11, 11, 11, 11, 11, 12
+// Fancy Magics
+
+struct Magic {
+    BitBoard* attacks;
+    BitBoard mask;
+    uint64_t magic;
+    int shift;
 };
 
-constexpr std::array<int, 64> bishop_shifts = {
-    6, 5, 5, 5, 5, 5, 5, 6,
-    5, 5, 5, 5, 5, 5, 5, 5,
-    5, 5, 7, 7, 7, 7, 5, 5,
-    5, 5, 7, 9, 9, 7, 5, 5,
-    5, 5, 7, 9, 9, 7, 5, 5,
-    5, 5, 7, 7, 7, 7, 5, 5,
-    5, 5, 5, 5, 5, 5, 5, 5,
-    6, 5, 5, 5, 5, 5, 5, 6
-};                     
+alignas(64) inline BitBoard rook_table[0x19000];
+alignas(64) inline BitBoard bishop_table[0x1480];
+
+inline Magic rook_magics[64];
+inline Magic bishop_magics[64];
+
+constexpr std::array<BitBoard, 64> genRookMasks() {
+    std::array<BitBoard, 64> masks{};
+    for (Square sq = 0; sq < 64; ++sq) {
+        BitBoard mask = 0ULL;
+        mask |= ray<Direction::North>(sq) & ~rank8BB;
+        mask |= ray<Direction::South>(sq) & ~rank1BB;
+        mask |= ray<Direction::East>(sq) & ~fileHBB;
+        mask |= ray<Direction::West>(sq) & ~fileABB;
+        masks[sq] = mask;
+    }
+
+    return masks;
+}
+
+constexpr std::array<BitBoard, 64> genBishopMasks() {
+    std::array<BitBoard, 64> masks{};
+    constexpr BitBoard trim_edges = ~(rank1BB | rank8BB | fileABB | fileHBB);
+    for (Square sq = 0; sq < 64; ++sq) {
+        BitBoard mask = 0ULL;
+        mask |= ray<Direction::NE>(sq) & trim_edges;
+        mask |= ray<Direction::SE>(sq) & trim_edges;
+        mask |= ray<Direction::SW>(sq) & trim_edges;
+        mask |= ray<Direction::NW>(sq) & trim_edges;
+        masks[sq] = mask;
+    }
+
+    return masks;
+}
+
+alignas(64) constexpr inline std::array<BitBoard, 64> rook_masks = genRookMasks();
+alignas(64) constexpr inline std::array<BitBoard, 64> bishop_masks = genBishopMasks();
+
+void initMagics();
+BitBoard slidingAttack(Square sq, BitBoard blockers, bool is_rook);
+
+inline BitBoard rookAttacks(Square sq, BitBoard blockers) {
+    const Magic& m = rook_magics[sq];
+    uint64_t index = ((blockers & m.mask) * m.magic) >> m.shift;
+    return m.attacks[index];
+}
+
+inline BitBoard bishopAttacks(Square sq, BitBoard blockers) {
+    const Magic& m = bishop_magics[sq];
+    uint64_t index = ((blockers & m.mask) * m.magic) >> m.shift;
+    return m.attacks[index];
+}
 
 // Function utilises lookup tables
 template <Piece piece>
@@ -114,12 +163,20 @@ inline BitBoard attacks(Square sq) {
     else if constexpr (piece == p) {
         return bpawn_att_table[sq];
     }
-
     else if constexpr (piece == N || piece == n) {
         return knight_att_table[sq];
     }
     else if constexpr (piece == K || piece == k) {
         return king_att_table[sq];
+    }
+    else if constexpr (piece == R || piece == r) {
+        return rookAttacks(sq, 0ULL);
+    }
+    else if constexpr (piece == B || piece == b) {
+        return bishopAttacks(sq, 0ULL);
+    }
+    else if constexpr (piece == Q || piece == q) {
+        return rookAttacks(sq, 0ULL) | bishopAttacks(sq, 0ULL);
     }
 
     return 0;

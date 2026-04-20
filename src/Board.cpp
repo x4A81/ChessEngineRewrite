@@ -93,7 +93,7 @@ void Board::loadFen(const string& fen) {
     bitBoards[allpieces] = bitBoards[bpieces] | bitBoards[wpieces];
 }
 
-void Board::printBoard() {
+void Board::printBoard() const {
     for (int r = 7; r >= 0; --r) {
         std::print("+---+---+---+---+---+---+---+---+\n"); 
         for (int f = 0; f < 8; ++f) {
@@ -109,7 +109,7 @@ void Board::printBoard() {
     std::print("+---+---+---+---+---+---+---+---+\n\n");
 }
 
-void Board::makeMove(Move move) {
+void Board::makeMove(const Move move) {
     // Get move data
     const Square from_sq = getFromSq(move);
     const Square to_sq = getToSq(move);
@@ -303,7 +303,7 @@ void Board::makeMove(Move move) {
     }
 }
 
-void Board::unmakeMove(Move move) {
+void Board::unmakeMove(const Move move) {
     ply--;
     currentState = stateHistory[ply];
     sideToMove = (sideToMove == Colour::WHITE) ? Colour::BLACK : Colour::WHITE;

@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 
-using Piece = int;
-using Square = int;
+using Piece = uint8_t;
+using Square = uint8_t;
 using Move = uint16_t;
 using BitBoard = uint64_t;
 inline constexpr Move nullmove = 0;

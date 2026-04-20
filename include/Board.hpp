@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <cassert>
 #include "Globals.hpp"
 
 constexpr const char* START_POS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -33,16 +34,12 @@ struct IrreversibleState {
     Piece capturedPiece;
 };
 
-inline bool isMove(Move move, MoveCode code)  { return (move >> 12) == code; }
-
-inline Square getFromSq(Move move) { return move & 0b111111; }
-
-inline Square getToSq(Move move) { return (move >> 6) & 0b111111; }
-
-inline MoveCode getMoveCode(Move move) { return static_cast<MoveCode>(move >> 12); }
-
-inline int getFile(Square sq) { return sq & 7; }
-inline int getRank(Square sq) { return sq >> 3; }
+[[nodiscard]] constexpr inline bool isMove(Move move, MoveCode code)  { return (move >> 12) == code; }
+[[nodiscard]] constexpr inline Square getFromSq(Move move) { return move & 0b111111; }
+[[nodiscard]] constexpr inline Square getToSq(Move move) { return (move >> 6) & 0b111111; }
+[[nodiscard]] constexpr inline MoveCode getMoveCode(Move move) { return static_cast<MoveCode>(move >> 12); }
+[[nodiscard]] constexpr inline int getFile(Square sq) { return sq & 7; }
+[[nodiscard]] constexpr inline int getRank(Square sq) { return sq >> 3; }
 
 class MoveList {
     private:
@@ -54,17 +51,17 @@ class MoveList {
             moves.fill(nullmove);
         }
 
-        void add(Move move) { moves[size++] = move; }
+        void add(Move move) { assert(size < 256); moves[size++] = move; }
 
         void clear() {
             moves.fill(nullmove);
             size = 0;
         }
 
-        size_t _size() { return size; }
+        size_t _size() const { return size; }
         auto begin() { return moves.begin(); }
         auto end() { return moves.begin() + size; }
-        bool is_empty() { return size == 0; }
+        bool isEmpty() const { return size == 0; }
         const Move& operator[](size_t idx) const {
             return moves[idx];
         }
@@ -91,22 +88,19 @@ class Board {
         
         long ply;
 
-        void loadFen(const string& fen);
-
+        
         Board() {
             loadFen(START_POS);
         }
-
-        void reset();
-
-        void makeMove(Move move);
-        void unmakeMove(Move move);
-
-        // Pseudo legal move generator
+        
+        BitBoard checkers() const;
         template <GenType type>
-        void generateMoves(MoveList& moveList);
+        [[gnu::hot]] void generateMoves(MoveList& moveList) const;
+        void printBoard() const;
 
-        void printBoard();
-
+        void loadFen(const string& fen);
+        void reset();
+        [[gnu::hot]] void makeMove(const Move move);
+        [[gnu::hot]] void unmakeMove(const Move move);
         void search();
 };
