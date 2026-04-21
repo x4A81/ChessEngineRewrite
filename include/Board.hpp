@@ -4,6 +4,7 @@
 #include <string>
 #include <cassert>
 #include "Globals.hpp"
+#include "BitMath.hpp"
 
 constexpr const char* START_POS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -94,6 +95,7 @@ class Board {
         }
         
         BitBoard checkers() const;
+        bool moreThanOneChecker() const { return popCount(checkers()) > 1; }
         template <GenType type>
         [[gnu::hot]] void generateMoves(MoveList& moveList) const;
         void printBoard() const;

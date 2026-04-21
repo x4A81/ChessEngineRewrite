@@ -2,6 +2,7 @@
 #include "../include/Board.hpp"
 #include "../include/BitMath.hpp"
 #include "../include/BitBoards.hpp"
+#include "Board.hpp"
 
 void encodePawnMove(MoveList& move_list, BitBoard bb, int shift_amount, MoveCode code) {
     while (bb) {
@@ -32,7 +33,8 @@ void generatePawnMoves(const Board& board, MoveList& move_list, BitBoard target)
     constexpr Direction up_right = (us == Colour::WHITE) ? Direction::NE : Direction::SW;
 
     const BitBoard empty = ~board.bitBoards[allpieces];
-    const BitBoard enemy = board.bitBoards[them == Colour::WHITE ? wpieces : bpieces]; // TODO Add logic for EVASIONS i.e. TYPE == EVASIONS ? checkers : enemy
+    const BitBoard enemy = (type == GenType::EVASIONS) ? board.checkers() 
+                        : board.bitBoards[them == Colour::WHITE ? wpieces : bpieces];
 
     BitBoard pawns7 = board.bitBoards[us == Colour::WHITE ? P : p] & _rank7;
     BitBoard pawnsnot7 = board.bitBoards[us == Colour::WHITE ? P : p] & ~_rank7;
@@ -122,23 +124,24 @@ void generateOthers(const Board& board, MoveList& move_list, BitBoard target) {
 template <Colour us, GenType type>
 void generateAllPieces(const Board& board, MoveList& move_list) {
     BitBoard target;
-    if (type != GenType::EVASIONS) { // || morethanone checkers
+    if (type != GenType::EVASIONS || !board.moreThanOneChecker()) {
         target = type == GenType::CAPTURES ? board.bitBoards[us == Colour::WHITE ? bpieces : wpieces]
                 : type == GenType::ALL ? ~board.bitBoards[us == Colour::WHITE ? wpieces : bpieces] 
                 : type == GenType::QUIET ? ~board.bitBoards[allpieces] 
-                : 0; // type == Evasions ? blockers and checkers
+                : type == GenType::EVASIONS ? board.checkers() // | blockers TODO
+                : 0;
 
         generatePawnMoves<us, type>(board, move_list, target);
         if (us == Colour::WHITE) {
             generateOthers<N>(board, move_list, target);
-            // generateOthers<B>(*this, move_list);
-            // generateOthers<R>(*this, move_list);
-            // generateOthers<Q>(*this, move_list);
+            generateOthers<B>(board, move_list, target);
+            generateOthers<R>(board, move_list, target);
+            generateOthers<Q>(board, move_list, target);
         } else {
             generateOthers<n>(board, move_list, target);
-            // generateOthers<b>(*this, move_list);
-            // generateOthers<r>(*this, move_list);
-            // generateOthers<q>(*this, move_list);
+            generateOthers<b>(board, move_list, target);
+            generateOthers<r>(board, move_list, target);
+            generateOthers<q>(board, move_list, target);
         }
     }
 

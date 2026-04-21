@@ -1,5 +1,6 @@
 #include "../include/Board.hpp"
 #include "../include/BitMath.hpp"
+#include "../include/BitBoards.hpp"
 #include <sstream>
 #include <print>
 
@@ -101,12 +102,29 @@ void Board::printBoard() const {
             if (pieceList[8*r+f] != no_piece)
                 piece = pieceToChar(pieceList[8*r+f]);
 
-            std::print("| %c ", piece);
+            std::printf("| %c ", piece);
         }
 
         std::print("| \n");
     }
     std::print("+---+---+---+---+---+---+---+---+\n\n");
+}
+
+BitBoard Board::checkers() const {
+    Square king_sq = sideToMove == Colour::WHITE ? bitscanForward(bitBoards[K]) 
+                    : bitscanForward(bitBoards[k]);
+    BitBoard attackers = 0ULL;
+    if (sideToMove == Colour::WHITE) {
+        attackers |= attacks<P>(king_sq) & bitBoards[p];
+    }
+    else 
+        attackers |= attacks<p>(king_sq) & bitBoards[P];
+
+    attackers |= attacks<N>(king_sq) & bitBoards[makePiece(n, oppC(sideToMove))];
+    attackers |= attacks<B>(king_sq) & bitBoards[makePiece(b, oppC(sideToMove))];
+    attackers |= attacks<R>(king_sq) & bitBoards[makePiece(r, oppC(sideToMove))];
+    attackers |= attacks<Q>(king_sq) & bitBoards[makePiece(q, oppC(sideToMove))];
+    return attackers;
 }
 
 void Board::makeMove(const Move move) {

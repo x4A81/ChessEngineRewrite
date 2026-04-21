@@ -73,3 +73,32 @@ template <Direction dir>
     }
     return result;
 }
+
+// Returns a ray from s1 to s2, excluding s1, including s2
+[[nodiscard]] constexpr inline BitBoard line(Square s1, Square s2) {
+    assert(validSq(s1) && validSq(s2));
+    if (ray<Direction::North>(s1) & mask(s2)) 
+        return ray<Direction::North>(s1) & ~ray<Direction::North>(s2);
+        
+    if (ray<Direction::South>(s1) & mask(s2)) 
+        return ray<Direction::South>(s1) & ~ray<Direction::South>(s2);
+        
+    if (ray<Direction::East>(s1) & mask(s2)) 
+        return ray<Direction::East>(s1) & ~ray<Direction::East>(s2);
+        
+    if (ray<Direction::West>(s1) & mask(s2)) 
+        return ray<Direction::West>(s1) & ~ray<Direction::West>(s2);
+        
+    if (ray<Direction::NE>(s1) & mask(s2)) 
+        return ray<Direction::NE>(s1) & ~ray<Direction::NE>(s2);
+        
+    if (ray<Direction::NW>(s1) & mask(s2)) 
+        return ray<Direction::NW>(s1) & ~ray<Direction::NW>(s2);
+        
+    if (ray<Direction::SE>(s1) & mask(s2)) 
+        return ray<Direction::SE>(s1) & ~ray<Direction::SE>(s2);
+        
+    if (ray<Direction::SW>(s1) & mask(s2)) 
+        return ray<Direction::SW>(s1) & ~ray<Direction::SW>(s2);
+    return 0ULL;
+}

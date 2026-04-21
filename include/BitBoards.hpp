@@ -23,7 +23,7 @@ constexpr inline BitBoard fileFBB = fileABB << 5;
 constexpr inline BitBoard fileGBB = fileABB << 6;
 constexpr inline BitBoard fileHBB = fileABB << 7;
 
-inline void printBitBoard(BitBoard bb) {
+inline void printBB(BitBoard bb) {
     std::print("\n\n");
     for (int r = 7; r >= 0; --r) {
         std::print("  +---+---+---+---+---+---+---+---+\n");
@@ -90,6 +90,20 @@ constexpr std::array<BitBoard, 64> generateKing_att_table() {
 }
 
 alignas(64) constexpr inline std::array<BitBoard, 64> king_att_table = generateKing_att_table();
+
+constexpr std::array<std::array<BitBoard, 64>, 64> generateBetweenBB() {
+    std::array<std::array<BitBoard, 64>, 64> table{};
+    for (int s1 = 0; s1 < 64; ++s1) {
+        for (int s2 = 0; s2 < 64; ++s2) {
+
+            table[s1][s2] = line(s1, s2);
+        }
+    }
+
+    return table;
+}
+
+alignas(64) constexpr inline std::array<std::array<BitBoard, 64>, 64> betweenBB = generateBetweenBB();
 
 // Fancy Magics
 

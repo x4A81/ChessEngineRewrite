@@ -35,21 +35,17 @@ std::string moveToStr(const Move move) {
 
 int main() {
     Board board;
-    // board.loadFen("7k/8/2n2p2/8/4N3/8/1P6/7K w - - 0 1");
+    initMagics();
+    // board.loadFen("5Q2/8/3b4/2P2N2/8/6K1/8/3R4 w - - 0 1");
     // board.printBoard();
 
+    // printBB(board.checkers());
     // MoveList list;
-    // board.generateMoves<GenType::ALL>(list);
+    // board.generateMoves<GenType::EVASIONS>(list);
     // for (Move move : list) {
     //     std::cout << moveToStr(move) << std::endl;
     // }
-
-    initMagics();
-    BitBoard bb = 0ull;
-    setBit(bb, SQ_g4);
-    setBit(bb, SQ_e6);
-    printBitBoard(bb);
-    printBitBoard(rookAttacks(SQ_e4, bb));
+    printBB(line(SQ_a1, SQ_d4));
 
     return 0;
 }

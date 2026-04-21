@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cassert>
 
 using Piece = uint8_t;
 using Square = uint8_t;
@@ -25,6 +26,18 @@ enum SquaresEncoding : Square {
 enum PiecesEncoding : Piece {
     p, n, b, r, q, k, P, N, B, R, Q, K, bpieces = 12, wpieces, allpieces, no_piece
 };
+
+inline Piece makePiece(Piece p, Colour c) {
+    assert(p <= k);
+    if (c == Colour::BLACK) return p;
+    else return p + 6;
+}
+
+inline Colour oppC(Colour c) {
+    assert(c != Colour::NO_COLOUR);
+    if (c == Colour::WHITE) return Colour::BLACK;
+    else return Colour::WHITE;
+}
 
 /// Move encoding:
 /// 6 bits for the from square
