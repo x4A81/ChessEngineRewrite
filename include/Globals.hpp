@@ -33,7 +33,7 @@ inline Piece makePiece(Piece p, Colour c) {
     else return p + 6;
 }
 
-inline Colour oppC(Colour c) {
+constexpr inline Colour oppC(Colour c) {
     assert(c != Colour::NO_COLOUR);
     if (c == Colour::WHITE) return Colour::BLACK;
     else return Colour::WHITE;

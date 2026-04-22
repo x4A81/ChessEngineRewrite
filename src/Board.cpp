@@ -111,8 +111,8 @@ void Board::printBoard() const {
 }
 
 BitBoard Board::checkers() const {
-    Square king_sq = sideToMove == Colour::WHITE ? bitscanForward(bitBoards[K]) 
-                    : bitscanForward(bitBoards[k]);
+    Square king_sq = sideToMove == Colour::WHITE ? lsb(bitBoards[K]) 
+                    : lsb(bitBoards[k]);
     BitBoard attackers = 0ULL;
     if (sideToMove == Colour::WHITE) {
         attackers |= attacks<P>(king_sq) & bitBoards[p];

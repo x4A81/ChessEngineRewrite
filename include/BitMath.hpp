@@ -29,19 +29,19 @@ constexpr inline void setBit(BitBoard& bb, Square square) {
     bb |= mask(square);
 }
 
-[[nodiscard]] constexpr inline int popLSB(BitBoard& bb) {
+[[nodiscard]] constexpr inline Square popLSB(BitBoard& bb) {
     assert(bb != 0);
     int sq = std::countr_zero(bb);
     bb &= bb - 1;
     return sq;
 }
 
-[[nodiscard]] constexpr inline int bitscanForward(BitBoard bb) {
+[[nodiscard]] constexpr inline Square lsb(BitBoard bb) {
     assert(bb != 0);
     return std::countr_zero(bb);
 }
 
-[[nodiscard]] constexpr inline int popCount(BitBoard bb) {
+[[nodiscard]] constexpr inline Square popCount(BitBoard bb) {
     return std::popcount(bb);
 }
 

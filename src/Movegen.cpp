@@ -32,12 +32,12 @@ void generatePawnMoves(const Board& board, MoveList& move_list, BitBoard target)
     constexpr Direction up_left = (us == Colour::WHITE) ? Direction::NW : Direction::SE;
     constexpr Direction up_right = (us == Colour::WHITE) ? Direction::NE : Direction::SW;
 
-    const BitBoard empty = ~board.bitBoards[allpieces];
+    const BitBoard empty = ~board.pieces(allpieces);
     const BitBoard enemy = (type == GenType::EVASIONS) ? board.checkers() 
-                        : board.bitBoards[them == Colour::WHITE ? wpieces : bpieces];
+                        : board.pieces<them>(no_piece);
 
-    BitBoard pawns7 = board.bitBoards[us == Colour::WHITE ? P : p] & _rank7;
-    BitBoard pawnsnot7 = board.bitBoards[us == Colour::WHITE ? P : p] & ~_rank7;
+    BitBoard pawns7 = board.pieces<us>(p) & _rank7;
+    BitBoard pawnsnot7 = board.pieces<us>(p) & ~_rank7;
 
     // Single and dbl (no promo)
     if constexpr (type != GenType::CAPTURES) {
@@ -112,8 +112,9 @@ void encodeMoves(MoveList& move_list, Square from, BitBoard bb, BitBoard otherpi
 template <Piece piece>
 void generateOthers(const Board& board, MoveList& move_list, BitBoard target) {
     static_assert(piece != P && piece != p && piece != K && piece != k); // not supported
-    BitBoard bb = board.bitBoards[piece];
-    BitBoard others = board.bitBoards[piece <= k ? wpieces : bpieces];
+    BitBoard bb = board.pieces(piece);
+    const Colour them = piece <= k ? Colour::BLACK : Colour::WHITE;
+    BitBoard others = board.pieces<them>(no_piece);
     while (bb) {
         Square from = popLSB(bb);
         BitBoard b = attacks<piece>(from) & target;
@@ -124,11 +125,13 @@ void generateOthers(const Board& board, MoveList& move_list, BitBoard target) {
 template <Colour us, GenType type>
 void generateAllPieces(const Board& board, MoveList& move_list) {
     BitBoard target;
+    const Colour them = oppC(us);
+    Square k_sq = lsb(board.pieces<us>(k));
     if (type != GenType::EVASIONS || !board.moreThanOneChecker()) {
-        target = type == GenType::CAPTURES ? board.bitBoards[us == Colour::WHITE ? bpieces : wpieces]
-                : type == GenType::ALL ? ~board.bitBoards[us == Colour::WHITE ? wpieces : bpieces] 
-                : type == GenType::QUIET ? ~board.bitBoards[allpieces] 
-                : type == GenType::EVASIONS ? board.checkers() // | blockers TODO
+        target = type == GenType::CAPTURES ? board.pieces<them>(no_piece)
+                : type == GenType::ALL ? ~board.pieces<us>(no_piece)
+                : type == GenType::QUIET ? ~board.pieces(allpieces)
+                : type == GenType::EVASIONS ? betweenBB[k_sq][lsb(board.checkers())]
                 : 0;
 
         generatePawnMoves<us, type>(board, move_list, target);
@@ -145,7 +148,7 @@ void generateAllPieces(const Board& board, MoveList& move_list) {
         }
     }
 
-    // gen king and castling
+    //  TODO gen king and castling
 }
 
 template <GenType type>

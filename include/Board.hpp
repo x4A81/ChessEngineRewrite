@@ -73,25 +73,49 @@ class MoveList {
 };
 
 class Board {
-    public:
-
-        IrreversibleState currentState;
-        std::array<IrreversibleState, 64> stateHistory;
-
+    private:
         // List of the pieces on each square
         array<Piece, 64> pieceList{};
 
         // Bitboards for each piece
         array<BitBoard, 15> bitBoards{};
+    
+        long ply;
+        std::array<IrreversibleState, 256> stateHistory;
+    public:
+
+        IrreversibleState currentState;
 
         // Colour to move
         Colour sideToMove;
         
-        long ply;
-
-        
         Board() {
             loadFen(START_POS);
+        }
+
+        // When you know the piece type and colour
+        template <Colour c>
+        BitBoard pieces(Piece p) const {
+            if (p <= k) {
+                if (c == Colour::WHITE)
+                    return bitBoards[p + 6];
+                else
+                    return bitBoards[p];
+            } else if (c == Colour::WHITE)
+                return bitBoards[wpieces];
+            else if (c == Colour::BLACK) 
+                return bitBoards[wpieces];
+
+        }
+
+        // When you know the exact piece
+        BitBoard pieces(Piece p) const {
+            return bitBoards[p];
+        }
+
+        Square squares(Square p) const {
+            assert(p <= K);
+            return pieceList[p];
         }
         
         BitBoard checkers() const;
@@ -102,7 +126,9 @@ class Board {
 
         void loadFen(const string& fen);
         void reset();
+        [[gnu::hot]] void makeNull(); // TODO
         [[gnu::hot]] void makeMove(const Move move);
+        [[gnu::hot]] void unmakeNull(); // TODO
         [[gnu::hot]] void unmakeMove(const Move move);
         void search();
 };
