@@ -10,12 +10,16 @@ constexpr const char* START_POS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w
 
 using std::array, std::string;
 
-enum EncodedCastlingRights : int {
+enum CastlingRights : int {
     wking_side = 1,
     wqueen_side,
     bking_side = 4,
     bqueen_side = 8
 };
+
+// Castling rights are in binary:
+// 1 bqs 1 bks 1 wqs 1 wks
+// 1111 = all castling rights
 
 inline constexpr std::array<int, 64> castlingRightsSqEncoder = {
     13, 15, 15, 15, 12, 15, 15, 14,
@@ -95,29 +99,32 @@ class Board {
 
         // When you know the piece type and colour
         template <Colour c>
-        BitBoard pieces(Piece p) const {
-            if (p <= k) {
+        BitBoard pieces(Piece piece) const {
+            if (piece <= Pc_k) {
                 if (c == Colour::WHITE)
-                    return bitBoards[p + 6];
+                    return bitBoards[piece + 6];
                 else
-                    return bitBoards[p];
+                    return bitBoards[piece];
             } else if (c == Colour::WHITE)
                 return bitBoards[wpieces];
             else if (c == Colour::BLACK) 
-                return bitBoards[wpieces];
+                return bitBoards[bpieces];
 
         }
 
         // When you know the exact piece
-        BitBoard pieces(Piece p) const {
-            return bitBoards[p];
+        BitBoard pieces(Piece piece) const {
+            return bitBoards[piece];
         }
 
-        Square squares(Square p) const {
-            assert(p <= K);
-            return pieceList[p];
+        Square squares(Square piece) const {
+            assert(piece <= Pc_K);
+            return pieceList[piece];
         }
-        
+
+        bool canCastle(Colour c, bool king_side) const;
+        bool castlingBlocked(Colour c, bool king_side) const;
+
         BitBoard checkers() const;
         bool moreThanOneChecker() const { return popCount(checkers()) > 1; }
         template <GenType type>

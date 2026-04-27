@@ -56,7 +56,7 @@ alignas(64) constexpr inline std::array<BitBoard, 64> bpawn_att_table = generate
 
 constexpr std::array<BitBoard, 64> generateKnight_att_table() {
     std::array<BitBoard, 64> table{};
-    BitBoard west, east, attacks;
+    BitBoard west = 0ULL, east = 0ULL, attacks = 0ULL;
     for (int sq = 0; sq < 64; ++sq) {
         BitBoard bb = mask(sq);
         east = shift<Direction::East>(bb);
@@ -170,28 +170,33 @@ inline BitBoard bishopAttacks(Square sq, BitBoard blockers) {
 // Function utilises lookup tables
 template <Piece piece>
 inline BitBoard attacks(Square sq) {
-    if constexpr (piece == P) {
-        
+    assert(!(piece == Pc_B || piece == Pc_b || piece == Pc_R || piece == Pc_r || piece == Pc_Q || piece == Pc_q));
+    if constexpr (piece == Pc_P)
         return wpawn_att_table[sq];
-    }
-    else if constexpr (piece == p) {
+    else if constexpr (piece == Pc_p)
         return bpawn_att_table[sq];
-    }
-    else if constexpr (piece == N || piece == n) {
+    else if constexpr (piece == Pc_N || piece == Pc_n)
         return knight_att_table[sq];
-    }
-    else if constexpr (piece == K || piece == k) {
+    else if constexpr (piece == Pc_K || piece == Pc_k)
         return king_att_table[sq];
-    }
-    else if constexpr (piece == R || piece == r) {
-        return rookAttacks(sq, 0ULL);
-    }
-    else if constexpr (piece == B || piece == b) {
-        return bishopAttacks(sq, 0ULL);
-    }
-    else if constexpr (piece == Q || piece == q) {
-        return rookAttacks(sq, 0ULL) | bishopAttacks(sq, 0ULL);
-    }
+    
+    else if constexpr (piece == Pc_K || piece == Pc_k)
+        return king_att_table[sq];
+
+    return 0;
+}
+
+
+// Function utilises lookup tables
+template <Piece piece>
+inline BitBoard attacks(Square sq, BitBoard blockers) {
+    assert(!(piece == Pc_p || piece == Pc_P || piece == Pc_N || piece == Pc_n || piece == Pc_k || piece == Pc_K));
+    if constexpr (piece == Pc_R || piece == Pc_r)
+        return rookAttacks(sq, blockers);
+    else if constexpr (piece == Pc_B || piece == Pc_b)
+        return bishopAttacks(sq, blockers);
+    else if constexpr (piece == Pc_Q || piece == Pc_q)
+        return rookAttacks(sq, blockers) | bishopAttacks(sq, blockers);
 
     return 0;
 }

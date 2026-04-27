@@ -2,7 +2,6 @@
 #include "../include/Board.hpp"
 #include "../include/BitMath.hpp"
 #include "../include/BitBoards.hpp"
-#include "Board.hpp"
 
 void encodePawnMove(MoveList& move_list, BitBoard bb, int shift_amount, MoveCode code) {
     while (bb) {
@@ -25,7 +24,7 @@ void encodePromotion(MoveList& move_list, BitBoard bb, int shift_amount, bool is
 
 template <Colour us, GenType type>
 void generatePawnMoves(const Board& board, MoveList& move_list, BitBoard target) {
-    constexpr Colour them = (us == Colour::WHITE) ? Colour::BLACK : Colour::WHITE;
+    constexpr Colour them = oppC(us);
     constexpr BitBoard _rank7 = (us == Colour::WHITE) ? rank7BB : rank2BB;
     constexpr BitBoard _rank3 = (us == Colour::WHITE) ? rank3BB : rank6BB;
     constexpr Direction up = (us == Colour::WHITE) ? Direction::North : Direction::South;
@@ -36,8 +35,8 @@ void generatePawnMoves(const Board& board, MoveList& move_list, BitBoard target)
     const BitBoard enemy = (type == GenType::EVASIONS) ? board.checkers() 
                         : board.pieces<them>(no_piece);
 
-    BitBoard pawns7 = board.pieces<us>(p) & _rank7;
-    BitBoard pawnsnot7 = board.pieces<us>(p) & ~_rank7;
+    BitBoard pawns7 = board.pieces<us>(Pc_p) & _rank7;
+    BitBoard pawnsnot7 = board.pieces<us>(Pc_p) & ~_rank7;
 
     // Single and dbl (no promo)
     if constexpr (type != GenType::CAPTURES) {
@@ -86,7 +85,7 @@ void generatePawnMoves(const Board& board, MoveList& move_list, BitBoard target)
                 return; // Ep can't resolve discovered check == 0
             }
 
-            b1 = pawnsnot7 & attacks<(us == Colour::WHITE ? p : P)>(board.currentState.epSquare);
+            b1 = pawnsnot7 & attacks<(us == Colour::WHITE ? Pc_p : Pc_P)>(board.currentState.epSquare);
 
             assert(b1);
             while (b1) {
@@ -97,9 +96,7 @@ void generatePawnMoves(const Board& board, MoveList& move_list, BitBoard target)
     }
 }
 
-template <Piece piece>
 void encodeMoves(MoveList& move_list, Square from, BitBoard bb, BitBoard otherpieces) {
-    static_assert(piece != P && piece != p && piece != K && piece != k); // not supported
     MoveCode code;
     while (bb) {
         Square to = popLSB(bb);
@@ -111,44 +108,90 @@ void encodeMoves(MoveList& move_list, Square from, BitBoard bb, BitBoard otherpi
 
 template <Piece piece>
 void generateOthers(const Board& board, MoveList& move_list, BitBoard target) {
-    static_assert(piece != P && piece != p && piece != K && piece != k); // not supported
+    static_assert(piece != Pc_P && piece != Pc_p && piece != Pc_K && piece != Pc_k); // not supported
     BitBoard bb = board.pieces(piece);
-    const Colour them = piece <= k ? Colour::BLACK : Colour::WHITE;
+    const Colour them = piece <= Pc_k ? Colour::BLACK : Colour::WHITE;
     BitBoard others = board.pieces<them>(no_piece);
+    [[maybe_unused]] BitBoard blockers = 0ULL;
+    constexpr bool is_slider = 
+    (piece == Pc_B || piece == Pc_b || piece == Pc_R || piece == Pc_r || piece == Pc_Q || piece == Pc_q);
+    if constexpr (is_slider) {
+        blockers = board.pieces(allpieces);
+    }
+
     while (bb) {
         Square from = popLSB(bb);
-        BitBoard b = attacks<piece>(from) & target;
-        encodeMoves<piece>(move_list, from, b, others);
+        BitBoard attacks = 0ULL;
+        if constexpr (is_slider)
+            attacks = attacks<piece>(from, blockers) & target;
+        else 
+            attacks = attacks<piece>(from) & target;
+        encodeMoves(move_list, from, attacks, others);
     }
+}
+
+void encodeCastling(MoveList& move_list, Colour c, bool is_king_side) {
+    Square from, to;
+    MoveCode code;
+    if (is_king_side) code = MoveCode::kcastle;
+    else code = MoveCode::qcastle;
+    if (c == Colour::WHITE) {
+        from = SQ_e1;
+        if (is_king_side) {
+            to = SQ_g1;
+        } else {
+            to = SQ_c1;
+        }
+    } else {
+        from = SQ_e8;
+        if (is_king_side) {
+            to = SQ_g8;
+        } else {
+            to = SQ_c8;
+        }
+    }
+
+    move_list.add((from) | (to << 6) | (code << 12));
 }
 
 template <Colour us, GenType type>
 void generateAllPieces(const Board& board, MoveList& move_list) {
     BitBoard target;
     const Colour them = oppC(us);
-    Square k_sq = lsb(board.pieces<us>(k));
+    Square k_sq = lsb(board.pieces<us>(Pc_k));
     if (type != GenType::EVASIONS || !board.moreThanOneChecker()) {
         target = type == GenType::CAPTURES ? board.pieces<them>(no_piece)
-                : type == GenType::ALL ? ~board.pieces<us>(no_piece)
+                : type == GenType::NON_EVASIONS ? ~board.pieces<us>(no_piece)
                 : type == GenType::QUIET ? ~board.pieces(allpieces)
                 : type == GenType::EVASIONS ? betweenBB[k_sq][lsb(board.checkers())]
                 : 0;
 
         generatePawnMoves<us, type>(board, move_list, target);
         if (us == Colour::WHITE) {
-            generateOthers<N>(board, move_list, target);
-            generateOthers<B>(board, move_list, target);
-            generateOthers<R>(board, move_list, target);
-            generateOthers<Q>(board, move_list, target);
+            generateOthers<Pc_N>(board, move_list, target);
+            generateOthers<Pc_B>(board, move_list, target);
+            generateOthers<Pc_R>(board, move_list, target);
+            generateOthers<Pc_Q>(board, move_list, target);
         } else {
-            generateOthers<n>(board, move_list, target);
-            generateOthers<b>(board, move_list, target);
-            generateOthers<r>(board, move_list, target);
-            generateOthers<q>(board, move_list, target);
+            generateOthers<Pc_n>(board, move_list, target);
+            generateOthers<Pc_b>(board, move_list, target);
+            generateOthers<Pc_r>(board, move_list, target);
+            generateOthers<Pc_q>(board, move_list, target);
         }
     }
 
-    //  TODO gen king and castling
+
+    BitBoard bb = attacks<Pc_k>(k_sq) & (type == GenType::EVASIONS ? ~board.pieces<us>(no_piece) : target);
+    encodeMoves(move_list, k_sq, bb, board.pieces<them>(no_piece));
+
+    if ((type == GenType::QUIET || type == GenType::NON_EVASIONS) 
+    && (board.canCastle(us, true) || board.canCastle(us, false))) {
+        for (bool king_side : { true, false }) {
+            if (board.castlingBlocked(us, king_side) && board.canCastle(us, king_side)) {
+                encodeCastling(move_list, us, king_side);
+            }
+        }
+    }
 }
 
 template <GenType type>
@@ -163,7 +206,7 @@ void Board::generateMoves(MoveList& move_list) const {
     }
 }
 
-template void Board::generateMoves<GenType::ALL>(MoveList& move_list) const;
+template void Board::generateMoves<GenType::NON_EVASIONS>(MoveList& move_list) const;
 template void Board::generateMoves<GenType::CAPTURES>(MoveList& move_list) const;
 template void Board::generateMoves<GenType::QUIET>(MoveList& move_list) const;
 template void Board::generateMoves<GenType::EVASIONS>(MoveList& move_list) const;

@@ -9,7 +9,7 @@ using BitBoard = uint64_t;
 inline constexpr Move nullmove = 0;
 
 enum class Colour { BLACK, WHITE, NO_COLOUR };
-enum class GenType { ALL, CAPTURES, QUIET, EVASIONS, LEGAL };
+enum class GenType { NON_EVASIONS, CAPTURES, QUIET, EVASIONS, LEGAL };
 enum class Direction : int { North, South, East, West, NE, NW, SE, SW };
 
 enum SquaresEncoding : Square {
@@ -24,13 +24,13 @@ enum SquaresEncoding : Square {
 };
 
 enum PiecesEncoding : Piece {
-    p, n, b, r, q, k, P, N, B, R, Q, K, bpieces = 12, wpieces, allpieces, no_piece
+    Pc_p, Pc_n, Pc_b, Pc_r, Pc_q, Pc_k, Pc_P, Pc_N, Pc_B, Pc_R, Pc_Q, Pc_K, bpieces = 12, wpieces, allpieces, no_piece
 };
 
-inline Piece makePiece(Piece p, Colour c) {
-    assert(p <= k);
-    if (c == Colour::BLACK) return p;
-    else return p + 6;
+inline Piece makePiece(Piece piece, Colour c) {
+    assert(piece <= Pc_k);
+    if (c == Colour::BLACK) return Pc_p;
+    else return Pc_p + 6;
 }
 
 constexpr inline Colour oppC(Colour c) {

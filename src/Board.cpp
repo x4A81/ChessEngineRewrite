@@ -3,21 +3,22 @@
 #include "../include/BitBoards.hpp"
 #include <sstream>
 #include <print>
+#include "Board.hpp"
 
 Piece charToPiece(char c) {
     switch (c) {
-        case 'p': return p;
-        case 'n': return n;
-        case 'b': return b;
-        case 'r': return r;
-        case 'q': return q;
-        case 'k': return k;
-        case 'P': return P;
-        case 'N': return N;
-        case 'B': return B;
-        case 'R': return R;
-        case 'Q': return Q;
-        case 'K': return K;
+        case 'p': return Pc_p;
+        case 'n': return Pc_n;
+        case 'b': return Pc_b;
+        case 'r': return Pc_r;
+        case 'q': return Pc_q;
+        case 'k': return Pc_k;
+        case 'P': return Pc_P;
+        case 'N': return Pc_N;
+        case 'B': return Pc_B;
+        case 'R': return Pc_R;
+        case 'Q': return Pc_Q;
+        case 'K': return Pc_K;
         default:  return no_piece;
     }
 }
@@ -42,6 +43,44 @@ void Board::reset() {
     currentState.halfmoveClock = 0;
     sideToMove = Colour::NO_COLOUR;
     ply = 0;
+}
+
+bool Board::canCastle(Colour c, bool king_side) const {
+    if (c == Colour::WHITE) {
+        return (king_side && currentState.castlingRights & wking_side)
+        || (!king_side && currentState.castlingRights & wqueen_side);
+    } else {
+            return (king_side && currentState.castlingRights & bking_side)
+        || (!king_side && currentState.castlingRights & bqueen_side);
+    }
+}
+
+bool Board::castlingBlocked(Colour c, bool king_side) const {
+    CastlingRights cr;
+    if (c == Colour::WHITE) {
+        if (king_side) cr = wking_side;
+        else cr = wqueen_side;
+    } else {
+        if (king_side) cr = bking_side;
+        else cr = bqueen_side;
+    }
+
+    switch (cr) {
+        case wking_side:
+            return squares(SQ_f1) == no_piece && squares(SQ_g1) == no_piece;
+        case wqueen_side:
+            return squares(SQ_d1) == no_piece && squares(SQ_c1) == no_piece && squares(SQ_b1) == no_piece;
+
+        case bking_side:
+            return squares(SQ_f8) == no_piece && squares(SQ_g8) == no_piece;
+        case bqueen_side:
+            return squares(SQ_d8) == no_piece && squares(SQ_c8) == no_piece && squares(SQ_b8) == no_piece;
+
+        default:
+            break;
+    }
+
+    return false;
 }
 
 void Board::loadFen(const string& fen) {
@@ -87,10 +126,10 @@ void Board::loadFen(const string& fen) {
         currentState.epSquare = no_square;
     }
 
-    bitBoards[bpieces] = bitBoards[p] | bitBoards[n] | bitBoards[b] |
-                    bitBoards[r] | bitBoards[q] | bitBoards[k];
-    bitBoards[wpieces] = bitBoards[P] | bitBoards[N] | bitBoards[B] |
-                    bitBoards[R] | bitBoards[Q] | bitBoards[K];
+    bitBoards[bpieces] = bitBoards[Pc_p] | bitBoards[Pc_n] | bitBoards[Pc_b] |
+                    bitBoards[Pc_r] | bitBoards[Pc_q] | bitBoards[Pc_k];
+    bitBoards[wpieces] = bitBoards[Pc_P] | bitBoards[Pc_N] | bitBoards[Pc_B] |
+                    bitBoards[Pc_R] | bitBoards[Pc_Q] | bitBoards[Pc_K];
     bitBoards[allpieces] = bitBoards[bpieces] | bitBoards[wpieces];
 }
 
@@ -111,19 +150,19 @@ void Board::printBoard() const {
 }
 
 BitBoard Board::checkers() const {
-    Square king_sq = sideToMove == Colour::WHITE ? lsb(bitBoards[K]) 
-                    : lsb(bitBoards[k]);
+    Square king_sq = sideToMove == Colour::WHITE ? lsb(bitBoards[Pc_K]) 
+                    : lsb(bitBoards[Pc_k]);
     BitBoard attackers = 0ULL;
     if (sideToMove == Colour::WHITE) {
-        attackers |= attacks<P>(king_sq) & bitBoards[p];
+        attackers |= attacks<Pc_P>(king_sq) & bitBoards[Pc_p];
     }
     else 
-        attackers |= attacks<p>(king_sq) & bitBoards[P];
+        attackers |= attacks<Pc_p>(king_sq) & bitBoards[Pc_P];
 
-    attackers |= attacks<N>(king_sq) & bitBoards[makePiece(n, oppC(sideToMove))];
-    attackers |= attacks<B>(king_sq) & bitBoards[makePiece(b, oppC(sideToMove))];
-    attackers |= attacks<R>(king_sq) & bitBoards[makePiece(r, oppC(sideToMove))];
-    attackers |= attacks<Q>(king_sq) & bitBoards[makePiece(q, oppC(sideToMove))];
+    attackers |= attacks<Pc_N>(king_sq) & bitBoards[makePiece(Pc_n, oppC(sideToMove))];
+    attackers |= attacks<Pc_B>(king_sq) & bitBoards[makePiece(Pc_b, oppC(sideToMove))];
+    attackers |= attacks<Pc_R>(king_sq) & bitBoards[makePiece(Pc_r, oppC(sideToMove))];
+    attackers |= attacks<Pc_Q>(king_sq) & bitBoards[makePiece(Pc_q, oppC(sideToMove))];
     return attackers;
 }
 
@@ -133,7 +172,7 @@ void Board::makeMove(const Move move) {
     const Square to_sq = getToSq(move);
     const Piece moving_piece = pieceList[from_sq];
     Piece captured_piece = pieceList[to_sq];
-    const Colour piece_colour = (moving_piece >= P) ? Colour::WHITE : Colour::BLACK;
+    const Colour piece_colour = (moving_piece >= Pc_P) ? Colour::WHITE : Colour::BLACK;
     const Square ep_square = currentState.epSquare;
 
     // Update board state
@@ -146,7 +185,7 @@ void Board::makeMove(const Move move) {
         captured_piece = pieceList[captured_sq];
     }
     currentState.halfmoveClock++;
-    if (moving_piece == p || moving_piece == P || captured_piece != no_piece) {
+    if (moving_piece == Pc_p || moving_piece == Pc_P || captured_piece != no_piece) {
         currentState.halfmoveClock = 0;
     }
     
@@ -225,10 +264,10 @@ void Board::makeMove(const Move move) {
         // Promotion move
         Piece promo_piece;
         switch (getMoveCode(move)) {
-            case npromo: promo_piece = (piece_colour == Colour::WHITE) ? N : n; break;
-            case bpromo: promo_piece = (piece_colour == Colour::WHITE) ? B : b; break;
-            case rpromo: promo_piece = (piece_colour == Colour::WHITE) ? R : r; break;
-            case qpromo: promo_piece = (piece_colour == Colour::WHITE) ? Q : q; break;
+            case npromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_N : Pc_n; break;
+            case bpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_B : Pc_b; break;
+            case rpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_R : Pc_r; break;
+            case qpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_Q : Pc_q; break;
             default: promo_piece = no_piece; break;
         }
 
@@ -247,10 +286,10 @@ void Board::makeMove(const Move move) {
         // Promotion move
         Piece promo_piece;
         switch (getMoveCode(move)) {
-            case npromo: promo_piece = (piece_colour == Colour::WHITE) ? N : n; break;
-            case bpromo: promo_piece = (piece_colour == Colour::WHITE) ? B : b; break;
-            case rpromo: promo_piece = (piece_colour == Colour::WHITE) ? R : r; break;
-            case qpromo: promo_piece = (piece_colour == Colour::WHITE) ? Q : q; break;
+            case c_npromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_N : Pc_n; break;
+            case c_bpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_B : Pc_b; break;
+            case c_rpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_R : Pc_r; break;
+            case c_qpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_Q : Pc_q; break;
             default: promo_piece = no_piece; break;
         }
 
@@ -331,7 +370,7 @@ void Board::unmakeMove(const Move move) {
     const Square to_sq = getToSq(move);
     const Piece moved_piece = pieceList[to_sq];
     const Piece captured_piece = currentState.capturedPiece;
-    const Colour piece_colour = (moved_piece >= P) ? Colour::WHITE : Colour::BLACK;
+    const Colour piece_colour = (moved_piece >= Pc_P) ? Colour::WHITE : Colour::BLACK;
     const Square ep_square = currentState.epSquare;
 
     if (isMove(move, quiet) || isMove(move, dblpush)) {
@@ -382,10 +421,10 @@ void Board::unmakeMove(const Move move) {
         // Promotion move
         Piece promo_piece;
         switch (getMoveCode(move)) {
-            case npromo: promo_piece = (piece_colour == Colour::WHITE) ? N : n; break;
-            case bpromo: promo_piece = (piece_colour == Colour::WHITE) ? B : b; break;
-            case rpromo: promo_piece = (piece_colour == Colour::WHITE) ? R : r; break;
-            case qpromo: promo_piece = (piece_colour == Colour::WHITE) ? Q : q; break;
+            case c_npromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_N : Pc_n; break;
+            case c_bpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_B : Pc_b; break;
+            case c_rpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_R : Pc_r; break;
+            case c_qpromo: promo_piece = (piece_colour == Colour::WHITE) ? Pc_Q : Pc_q; break;
             default: promo_piece = no_piece; break;
         }
 

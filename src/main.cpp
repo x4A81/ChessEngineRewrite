@@ -36,13 +36,18 @@ std::string moveToStr(const Move move) {
 int main() {
     Board board;
     initMagics();
-    board.loadFen("2b5/6N1/3P4/3B4/6K1/8/8/5R2 w - - 0 1");
+    board.loadFen("2n5/1P6/3n4/4Pp2/2N3B1/Q7/8/4K2R w K f6 1 1");
     board.printBoard();
 
     MoveList list;
-    board.generateMoves<GenType::EVASIONS>(list);
+    board.generateMoves<GenType::NON_EVASIONS>(list);
     for (Move move : list) {
-        std::cout << moveToStr(move) << std::endl;
+        // std::cout << moveToStr(move) << std::endl;
+        board.makeMove(move);
+        board.printBoard();
+        board.unmakeMove(move);
+        board.printBoard();
+        std::println();
     }
 
     return 0;
