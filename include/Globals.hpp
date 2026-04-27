@@ -8,7 +8,7 @@ using Move = uint16_t;
 using BitBoard = uint64_t;
 inline constexpr Move nullmove = 0;
 
-enum class Colour { BLACK, WHITE, NO_COLOUR };
+enum class Colour : int { BLACK, WHITE, NO_COLOUR };
 enum class GenType { NON_EVASIONS, CAPTURES, QUIET, EVASIONS, LEGAL };
 enum class Direction : int { North, South, East, West, NE, NW, SE, SW };
 

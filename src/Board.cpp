@@ -83,6 +83,29 @@ bool Board::castlingBlocked(Colour c, bool king_side) const {
     return false;
 }
 
+void Board::updateSliders(Colour c) {
+    assert(c != Colour::NO_COLOUR);
+    Square ksq = squares((c == Colour::WHITE) ? Pc_K : Pc_k);
+    pinners[static_cast<int>(c)] = 0Ull;
+    blocks_for_king[static_cast<int>(c)] = 0ULL;
+    Colour them = oppC(c);
+    // Snipers are sliders that attack the a square when all other pieces are removed
+    BitBoard snipers = ((attacks<Pc_r>(ksq, 0ULL) & piecesOf(them, Pc_r))
+                        | (attacks<Pc_b>(ksq, 0ULL) & piecesOf(them, Pc_b))
+                        | (attacks<Pc_q>(ksq, 0ULL) & piecesOf(them, Pc_q)))
+                        & ~piecesGet(them);
+    BitBoard occ = piecesGet(allpieces) ^ snipers;
+    while (snipers) {
+        Square sn_sq = popLSB(snipers);
+        BitBoard bb = getBetweenBB(ksq, sn_sq) & occ;
+        if (bb & !moreThanOne(bb)) {
+            blocks_for_king[static_cast<int>(c)] |= bb;
+            if (bb & piecesGet(c))
+                pinners[static_cast<int>(oppC(c))] |= bb;
+        }
+    }
+}
+
 void Board::loadFen(const string& fen) {
     reset();
     // Implementation for loading FEN string into board representation
@@ -101,7 +124,7 @@ void Board::loadFen(const string& fen) {
             Piece piece_idx = charToPiece(c);
             Square flip_sq = flipRank(sq);  
             pieceList[flip_sq] = piece_idx;
-            bitBoards[piece_idx] |= mask(flip_sq);
+            setBit(pieces(piece_idx), flip_sq);
             sq++;
         }
     }
@@ -150,8 +173,7 @@ void Board::printBoard() const {
 }
 
 BitBoard Board::checkers() const {
-    Square king_sq = sideToMove == Colour::WHITE ? lsb(bitBoards[Pc_K]) 
-                    : lsb(bitBoards[Pc_k]);
+    Square king_sq = sideToMove == Colour::WHITE ? squares(Pc_K) : squares(Pc_k);
     BitBoard attackers = 0ULL;
     if (sideToMove == Colour::WHITE) {
         attackers |= attacks<Pc_P>(king_sq) & bitBoards[Pc_p];

@@ -45,6 +45,11 @@ constexpr inline void setBit(BitBoard& bb, Square square) {
     return std::popcount(bb);
 }
 
+[[nodiscard]] constexpr inline bool moreThanOne(BitBoard bb) {
+    assert(bb != 0);
+    return popCount(bb) > 1;
+}
+
 // Designed to be indexed by Direction enum
 constexpr inline std::array<BitBoard, 8> noWraps = {
     0xFFFFFFFFFFFFFF00, 0x00FFFFFFFFFFFFFF, 0xFEFEFEFEFEFEFEFE, 0x7F7F7F7F7F7F7F7F, 

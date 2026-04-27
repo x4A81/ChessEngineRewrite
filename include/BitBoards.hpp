@@ -104,7 +104,9 @@ constexpr std::array<std::array<BitBoard, 64>, 64> generateBetweenBB() {
 }
 
 alignas(64) constexpr inline std::array<std::array<BitBoard, 64>, 64> betweenBB = generateBetweenBB();
-
+constexpr inline BitBoard getBetweenBB(Square sq1, Square sq2) {
+    return betweenBB[sq1][sq2];
+}
 // Fancy Magics
 
 struct Magic {

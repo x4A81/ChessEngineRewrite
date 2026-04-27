@@ -2,6 +2,7 @@
 #include "../include/Board.hpp"
 #include "../include/BitMath.hpp"
 #include "../include/BitBoards.hpp"
+#include "Board.hpp"
 
 void encodePawnMove(MoveList& move_list, BitBoard bb, int shift_amount, MoveCode code) {
     while (bb) {
@@ -31,12 +32,12 @@ void generatePawnMoves(const Board& board, MoveList& move_list, BitBoard target)
     constexpr Direction up_left = (us == Colour::WHITE) ? Direction::NW : Direction::SE;
     constexpr Direction up_right = (us == Colour::WHITE) ? Direction::NE : Direction::SW;
 
-    const BitBoard empty = ~board.pieces(allpieces);
+    const BitBoard empty = ~board.piecesGet(allpieces);
     const BitBoard enemy = (type == GenType::EVASIONS) ? board.checkers() 
-                        : board.pieces<them>(no_piece);
+                        : board.piecesOf<them>(no_piece);
 
-    BitBoard pawns7 = board.pieces<us>(Pc_p) & _rank7;
-    BitBoard pawnsnot7 = board.pieces<us>(Pc_p) & ~_rank7;
+    BitBoard pawns7 = board.piecesOf<us>(Pc_p) & _rank7;
+    BitBoard pawnsnot7 = board.piecesOf<us>(Pc_p) & ~_rank7;
 
     // Single and dbl (no promo)
     if constexpr (type != GenType::CAPTURES) {
@@ -109,14 +110,14 @@ void encodeMoves(MoveList& move_list, Square from, BitBoard bb, BitBoard otherpi
 template <Piece piece>
 void generateOthers(const Board& board, MoveList& move_list, BitBoard target) {
     static_assert(piece != Pc_P && piece != Pc_p && piece != Pc_K && piece != Pc_k); // not supported
-    BitBoard bb = board.pieces(piece);
+    BitBoard bb = board.piecesGet(piece);
     const Colour them = piece <= Pc_k ? Colour::BLACK : Colour::WHITE;
-    BitBoard others = board.pieces<them>(no_piece);
+    BitBoard others = board.piecesOf<them>(no_piece);
     [[maybe_unused]] BitBoard blockers = 0ULL;
     constexpr bool is_slider = 
     (piece == Pc_B || piece == Pc_b || piece == Pc_R || piece == Pc_r || piece == Pc_Q || piece == Pc_q);
     if constexpr (is_slider) {
-        blockers = board.pieces(allpieces);
+        blockers = board.piecesGet(allpieces);
     }
 
     while (bb) {
@@ -158,11 +159,11 @@ template <Colour us, GenType type>
 void generateAllPieces(const Board& board, MoveList& move_list) {
     BitBoard target;
     const Colour them = oppC(us);
-    Square k_sq = lsb(board.pieces<us>(Pc_k));
-    if (type != GenType::EVASIONS || !board.moreThanOneChecker()) {
-        target = type == GenType::CAPTURES ? board.pieces<them>(no_piece)
-                : type == GenType::NON_EVASIONS ? ~board.pieces<us>(no_piece)
-                : type == GenType::QUIET ? ~board.pieces(allpieces)
+    Square k_sq = lsb(board.piecesOf<us>(Pc_k));
+    if (type != GenType::EVASIONS || !moreThanOne(board.checkers())) {
+        target = type == GenType::CAPTURES ? board.piecesOf<them>(no_piece)
+                : type == GenType::NON_EVASIONS ? ~board.piecesOf<us>(no_piece)
+                : type == GenType::QUIET ? ~board.piecesGet(allpieces)
                 : type == GenType::EVASIONS ? betweenBB[k_sq][lsb(board.checkers())]
                 : 0;
 
@@ -181,8 +182,8 @@ void generateAllPieces(const Board& board, MoveList& move_list) {
     }
 
 
-    BitBoard bb = attacks<Pc_k>(k_sq) & (type == GenType::EVASIONS ? ~board.pieces<us>(no_piece) : target);
-    encodeMoves(move_list, k_sq, bb, board.pieces<them>(no_piece));
+    BitBoard bb = attacks<Pc_k>(k_sq) & (type == GenType::EVASIONS ? ~board.piecesOf<us>(no_piece) : target);
+    encodeMoves(move_list, k_sq, bb, board.piecesOf<them>(no_piece));
 
     if ((type == GenType::QUIET || type == GenType::NON_EVASIONS) 
     && (board.canCastle(us, true) || board.canCastle(us, false))) {
@@ -214,5 +215,23 @@ template void Board::generateMoves<GenType::EVASIONS>(MoveList& move_list) const
 template <>
 void Board::generateMoves<GenType::LEGAL>(MoveList& move_list) const {
     // Generate legal moves
-    // TODO implement this
+    Colour us = sideToMove;
+    BitBoard pinned = blocks_for_king[static_cast<int>(us)] & piecesGet(us);
+    Square ksq = squares(us == Colour::WHITE ? Pc_K : Pc_k);
+    int idx = move_list._size();
+    if (checkers()) {
+        generateMoves<GenType::EVASIONS>(move_list);
+    } else {
+        generateMoves<GenType::NON_EVASIONS>(move_list);
+    }
+
+    while (idx != move_list._size()) {
+        Square from = getFromSq(move_list[idx]);
+        MoveCode code = getMoveCode(move_list[idx]);
+        if (((pinned & mask(from)) || from == ksq || code == epcapture) && !isLegal(move_list[idx])) {
+            move_list.removeMove(idx);
+            // don't inc
+        }
+        else ++idx;
+    }
 }

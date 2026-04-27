@@ -63,6 +63,12 @@ class MoveList {
             size = 0;
         }
 
+        void removeMove(int idx) {
+            assert(idx >= 0 && idx < size);
+            moves[idx] = moves[size - 1];
+            size--;
+        }
+
         size_t _size() const { return size; }
         auto begin() { return moves.begin(); }
         auto end() { return moves.begin() + size; }
@@ -86,6 +92,13 @@ class Board {
     
         long ply;
         std::array<IrreversibleState, 256> stateHistory;
+
+        // Enemy pinners
+        array<BitBoard, 2> pinners = {};
+
+        // Where a piece can move to block a check
+        array<BitBoard, 2> blocks_for_king = {};
+
     public:
 
         IrreversibleState currentState;
@@ -99,7 +112,20 @@ class Board {
 
         // When you know the piece type and colour
         template <Colour c>
-        BitBoard pieces(Piece piece) const {
+        BitBoard piecesOf(Piece piece) const {
+            if (piece <= Pc_k) {
+                if (c == Colour::WHITE)
+                    return bitBoards[piece + 6];
+                else
+                    return bitBoards[piece];
+            } else if (c == Colour::WHITE)
+                return bitBoards[wpieces];
+            else if (c == Colour::BLACK) 
+                return bitBoards[bpieces];
+
+        }
+
+        BitBoard piecesOf(Colour c, Piece piece) const {
             if (piece <= Pc_k) {
                 if (c == Colour::WHITE)
                     return bitBoards[piece + 6];
@@ -113,8 +139,16 @@ class Board {
         }
 
         // When you know the exact piece
-        BitBoard pieces(Piece piece) const {
+        BitBoard piecesGet(Piece piece) const {
             return bitBoards[piece];
+        }
+
+        BitBoard& pieces(Piece piece) {
+            return bitBoards[piece];
+        }
+
+        BitBoard piecesGet(Colour c) const {
+            return bitBoards[c == Colour::WHITE ? wpieces : bpieces];
         }
 
         Square squares(Square piece) const {
@@ -122,11 +156,14 @@ class Board {
             return pieceList[piece];
         }
 
+        // Test whether a move is legal
+        bool isLegal(Move move) const; // TODO
+
         bool canCastle(Colour c, bool king_side) const;
         bool castlingBlocked(Colour c, bool king_side) const;
+        void updateSliders(Colour c);
 
         BitBoard checkers() const;
-        bool moreThanOneChecker() const { return popCount(checkers()) > 1; }
         template <GenType type>
         [[gnu::hot]] void generateMoves(MoveList& moveList) const;
         void printBoard() const;
